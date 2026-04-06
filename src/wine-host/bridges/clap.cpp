@@ -602,7 +602,10 @@ void ClapBridge::run() {
                      &editor = instance.editor]() {
                         Editor& editor_instance =
                             editor.emplace(main_context_, config_,
-                                           generic_logger_, request.x11_window);
+                                           generic_logger_, request.x11_window,
+                                           std::nullopt, std::nullopt,
+                                           Editor::EditorCoordinatePolicy::
+                                               clap_root_offset);
 
                         const clap_window_t window{
                             .api = CLAP_WINDOW_API_WIN32,
