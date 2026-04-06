@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <map>
+#include <optional>
 #include <shared_mutex>
 #include <string>
 
@@ -258,12 +259,16 @@ struct Vst3PluginInstance {
     std::optional<Steinberg::Vst::ProcessSetup> process_setup;
 
     /**
-     * The last size that was set with onSize(). We use this to fudge the
-     * return value of getSize() if it is off by one pixel, which can happen
-     * due to HiDPI rounding. Otherwise, DAWs like Ardour might go into an
-     * infinite loop trying to adjust the size to a specific target.
+     * The last size that was set for the current view through `onSize()`, or
+     * the initial size reported after attaching the view. We use this to fudge
+     * the return value of getSize() if it is off by one pixel, which can
+     * happen due to HiDPI rounding. Otherwise, DAWs like Ardour might go into
+     * an infinite loop trying to adjust the size to a specific target.
+     *
+     * This is reset when the current view is removed so reopened editors do
+     * not inherit stale size state from the previous view instance.
      */
-    Steinberg::ViewRect last_set_size;
+    std::optional<Steinberg::ViewRect> last_set_size;
 };
 
 /**

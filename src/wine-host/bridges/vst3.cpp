@@ -801,6 +801,7 @@ void Vst3Bridge::run() {
                     .run_in_context([&, &instance = instance]() -> tresult {
                         Steinberg::ViewRect size;
                         std::optional<Size> initial_size;
+                        instance.last_set_size.reset();
                         // Only accept the initial size from the plugin if it's
                         // valid. Some plugins like Spectrasonics' Omnisphere 2
                         // return 0x0 for the initial size, which breaks our
@@ -856,6 +857,7 @@ void Vst3Bridge::run() {
                                     &size) == Steinberg::kResultOk) {
                                 instance.editor->resize(size.getWidth(),
                                                         size.getHeight());
+                                instance.last_set_size = size;
                             }
 
                             // NOTE: There's zero reason why the window couldn't
@@ -883,6 +885,7 @@ void Vst3Bridge::run() {
                         // Cleanup is handled through RAII
                         const tresult result =
                             instance.plug_view_instance->plug_view->removed();
+                        instance.last_set_size.reset();
                         instance.editor.reset();
 
                         return result;
@@ -949,11 +952,12 @@ void Vst3Bridge::run() {
                         //       an infinite loop, just return the size that the
                         //       host requested in this case.
                         if (result == Steinberg::kResultOk &&
+                            instance.last_set_size &&
                             abs(size.getWidth() -
-                                instance.last_set_size.getWidth()) <= 1 &&
+                                instance.last_set_size->getWidth()) <= 1 &&
                             abs(size.getHeight() -
-                                instance.last_set_size.getHeight()) <= 1) {
-                            size = instance.last_set_size;
+                                instance.last_set_size->getHeight()) <= 1) {
+                            size = *instance.last_set_size;
                         }
                         return result;
                     });
@@ -1401,8 +1405,9 @@ void Vst3Bridge::notify_plugin_on_new_size(size_t instance_id,
         // Skip if the host already called onSize() with this size during
         // resizeView(). This is detected by checking if last_set_size already
         // matches new_size (the OnSize handler updates last_set_size).
-        if (instance.last_set_size.getWidth() == new_size.getWidth() &&
-            instance.last_set_size.getHeight() == new_size.getHeight()) {
+        if (instance.last_set_size &&
+            instance.last_set_size->getWidth() == new_size.getWidth() &&
+            instance.last_set_size->getHeight() == new_size.getHeight()) {
             return;
         }
 
